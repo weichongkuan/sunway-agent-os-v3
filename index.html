@@ -25,7 +25,7 @@ button,textarea,input{font:inherit}button{cursor:pointer}
 .app{height:100vh;min-height:720px;min-width:1120px;display:grid;grid-template-columns:220px 1fr;overflow:hidden}
 
 /* ===== 侧边栏 ===== */
-aside{background:linear-gradient(180deg,var(--navy),#0d2438);color:#fff;padding:20px 16px;display:flex;flex-direction:column}
+aside{background:linear-gradient(180deg,var(--navy),#0d2438);color:#fff;padding:20px 16px;display:flex;flex-direction:column;min-height:0}
 .logo{height:44px;background:#fff;border-radius:10px;padding:8px 12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--navy);letter-spacing:.4px}
 .workspace{padding:18px 8px 20px}
 .workspace small{font-size:10px;color:#8598ad}
@@ -51,7 +51,7 @@ aside{background:linear-gradient(180deg,var(--navy),#0d2438);color:#fff;padding:
 .role-option b{font-size:11px}.role-option span{font-size:9.5px;color:var(--sub)}
 
 /* ===== 主内容区 ===== */
-main{min-width:0;display:flex;flex-direction:column}
+main{min-width:0;display:flex;flex-direction:column;min-height:0;height:100%;overflow:hidden}
 .topbar{height:64px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex:none}
 .crumb{font-size:12px;color:var(--sub)}
 .crumb b{font-size:14px;color:var(--ink);margin-left:7px}
@@ -247,7 +247,7 @@ main{min-width:0;display:flex;flex-direction:column}
 .task-detail{font-size:12px;color:var(--sub);line-height:1.65;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 
 /* ===== Agent协作室 ===== */
-.chatroom{display:grid;grid-template-columns:220px 1fr 280px;gap:var(--gap);height:calc(100vh - 140px);min-height:560px}
+.chatroom{display:grid;grid-template-columns:220px 1fr 300px;gap:var(--gap);height:calc(100vh - 140px);min-height:560px;overflow:hidden}
 .cr-col{background:#fff;border:1px solid var(--line);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden}
 .cr-head{height:52px;border-bottom:1px solid var(--line);padding:0 16px;display:flex;align-items:center;justify-content:space-between;flex:none}
 .cr-head b{font-size:13px}
@@ -455,7 +455,13 @@ var initChatroomMsgs = [
   { who:'agent', name:'参谋长', text:'收到，我来编排。需要调用：1.会议语料解析 2.权利边界检查 3.PPT生成。预计5分钟完成。', time:'14:02' },
   { who:'agent', name:'参谋长', text:'方案V1已生成，请审阅。', file:{ name:'公司建制PPT V1', type:'PPT', meta:'基于会议语料与权利清单生成' }, time:'14:07' },
   { who:'human', name:'文化板块负责人', text:'<span class="mention">@权利Agent</span> 权利边界有没有问题？', time:'14:10' },
-  { who:'agent', name:'权利Agent', text:'发现2处潜在越界：\n1. 第3页提及合作方名称未获授权；\n2. 第7页财务数据需确认披露权限。\n建议修改后提交。', time:'14:11' }
+  { who:'agent', name:'权利Agent', text:'发现2处潜在越界：\n1. 第3页提及合作方名称未获授权；\n2. 第7页财务数据需确认披露权限。\n建议修改后提交。', time:'14:11' },
+  { who:'human', name:'文化板块负责人', text:'<span class="mention">@内容Agent</span> 改一下这两处，再校验一次缰绳', time:'14:13' },
+  { who:'agent', name:'内容Agent', text:'已修正：\n• 第3页合作方名称改为"已授权合作方"占位；\n• 第7页财务数据降为内部口径，外部版本仅展示比例。\n请权利Agent再核一次。', time:'14:15' },
+  { who:'agent', name:'权利Agent', text:'复核通过，2处越界均已解决。', time:'14:16' },
+  { who:'human', name:'文化板块负责人', text:'<span class="mention">@参谋长</span> 修改后重新生成V2', time:'14:18' },
+  { who:'agent', name:'参谋长', text:'V2已生成，已修正2处越界问题。', file:{ name:'公司建制PPT V2', type:'PPT', meta:'已修正第3页合作方披露、第7页财务数据' }, time:'14:22' },
+  { who:'agent', name:'校验Agent', text:'缰绳校验：本次输出命中3条业务级缰绳（文化IP判断/质量标准/对外材料审核），全部一致。', time:'14:23' }
 ];
 
 // ===== DOM引用 =====
@@ -775,18 +781,17 @@ views.chatroom = function(){
           '<div class="compose-actions"><span style="font-size:10px;color:var(--muted)">Enter发送</span><button class="btn gold" data-act="sendChat">发送</button></div></div>'+
         '</div>'+
       '</div>'+
-      // 右栏：文件审阅（默认折叠）
+      // 右栏：文件审阅（默认展开）
       '<div class="cr-col">'+
-        '<div class="cr-head"><b>文件审阅</b><span style="cursor:pointer" data-toggle="reviewBody">查看审阅 ▾</span></div>'+
-        '<div class="cr-body">'+
-          '<div class="collapse-body" id="reviewBody">'+
-            '<div class="review-panel">'+
-              '<div class="review-item"><b>公司建制PPT V2</b><p>已修正第3页合作方披露、第7页财务数据。2处越界已解决。</p><div style="margin-top:8px"><span class="badge">已审阅</span></div></div>'+
-              '<div class="review-item"><b>权利清单 v3</b><p>商务授权负责人提交，待文化板块负责人确认。</p><div style="margin-top:8px"><span class="badge amber">待确认</span></div></div>'+
-              '<div class="review-item"><b>06-16会议纪要</b><p>已整理完成，已转交参谋长生成方案。</p><div style="margin-top:8px"><span class="badge">已归档</span></div></div>'+
-            '</div>'+
+        '<div class="cr-head"><b>文件审阅</b><span style="cursor:pointer" data-toggle="reviewBody">收起 ▴</span></div>'+
+        '<div class="cr-body" id="reviewBodyWrap">'+
+          '<div class="review-panel">'+
+            '<div class="review-item"><b>公司建制PPT V2</b><p>已修正第3页合作方披露、第7页财务数据。2处越界已解决。</p><div style="margin-top:8px"><span class="badge">已审阅</span></div></div>'+
+            '<div class="review-item"><b>权利清单 v3</b><p>商务授权负责人提交，待文化板块负责人确认。</p><div style="margin-top:8px"><span class="badge amber">待确认</span></div></div>'+
+            '<div class="review-item"><b>06-16会议纪要</b><p>已整理完成，已转交参谋长生成方案。</p><div style="margin-top:8px"><span class="badge">已归档</span></div></div>'+
+            '<div class="review-item"><b>投行尽调报告</b><p>初稿45%，预计下周完成，无阻塞风险。</p><div style="margin-top:8px"><span class="badge blue">推进中</span></div></div>'+
+            '<div class="review-item"><b>农业分成方案</b><p>合作方提议3:7→4:6，分身已评估，建议洪总决策。</p><div style="margin-top:8px"><span class="badge amber">待决策</span></div></div>'+
           '</div>'+
-          '<div style="padding:16px;color:var(--muted);font-size:12px;text-align:center" id="reviewHint">点击"查看审阅"展开文件审阅面板</div>'+
         '</div>'+
       '</div>'+
     '</div>'+
@@ -1068,8 +1073,12 @@ content.addEventListener('click', function(e){
       }
       // 文件审阅面板特殊处理
       if(toggle.dataset.toggle==='reviewBody'){
-        var hint = document.getElementById('reviewHint');
-        if(hint) hint.style.display = isOpen ? 'none' : '';
+        var wrap = document.getElementById('reviewBodyWrap');
+        if(wrap){
+          var hidden = wrap.style.display === 'none';
+          wrap.style.display = hidden ? '' : 'none';
+          toggle.textContent = hidden ? '收起 ▴' : '查看审阅 ▾';
+        }
       }
     }
   }
